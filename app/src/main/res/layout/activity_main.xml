@@ -35,14 +35,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Get Location Update" />
+            android:text="Start Detector" />
 
         <Button
             android:id="@+id/removeLocationButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Remove Location Update" />
+            android:text="Stop Detector" />
 
     </LinearLayout>
 

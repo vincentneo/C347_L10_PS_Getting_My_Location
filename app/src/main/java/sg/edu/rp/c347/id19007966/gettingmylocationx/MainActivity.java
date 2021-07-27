@@ -1,6 +1,7 @@
 package sg.edu.rp.c347.id19007966.gettingmylocationx;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -8,9 +9,15 @@ import androidx.core.content.PermissionChecker;
 import androidx.fragment.app.FragmentManager;
 
 import android.Manifest;
+import android.app.Notification;
+import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.location.Location;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
@@ -52,19 +59,9 @@ public class MainActivity extends AppCompatActivity {
         String[] fineLoc = new String[]{Manifest.permission.ACCESS_FINE_LOCATION};
         ActivityCompat.requestPermissions(MainActivity.this, fineLoc, 0);
 
-        String folderLocation = getFilesDir().getAbsolutePath() + "/LocationLogs";
-        File folder = new File(folderLocation);
-        if (!folder.exists()) {
-            boolean result = folder.mkdir();
-            if (result) {
-                Log.d("File read/write", "Folder Created");
-            }
-            else {
-                Toast.makeText(this, "folder creation FAILED!!", Toast.LENGTH_SHORT).show();
-            }
-        }
+        String[] bgLoc = new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION};
+        ActivityCompat.requestPermissions(MainActivity.this, bgLoc, 0);
 
-        File locationLog = new File(folderLocation, "log.txt");
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -73,47 +70,6 @@ public class MainActivity extends AppCompatActivity {
         getLocationButton = findViewById(R.id.getLocationButton);
         removeLocationButton = findViewById(R.id.removeLocationButton);
         checkRecordsButton = findViewById(R.id.checkRecordsButton);
-
-        FusedLocationProviderClient client = LocationServices.getFusedLocationProviderClient(this);
-
-        LocationRequest locationRequest = LocationRequest.create();
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        locationRequest.setInterval(30 * 1000); // in ms
-        locationRequest.setSmallestDisplacement(500);
-
-        LocationCallback locationCallback = new LocationCallback() {
-            @Override
-            public void onLocationResult(LocationResult locationResult) {
-                Location location = locationResult.getLastLocation();
-                coordinatesTextView.setText(textFrom(location));
-
-                if (currentLocationMarker == null) {
-                    MarkerOptions options = new MarkerOptions()
-                            .position(coordinatesFrom(location))
-                            .icon(BitmapDescriptorFactory
-                                    .defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
-                    currentLocationMarker = map.addMarker(options);
-                    map.moveCamera(CameraUpdateFactory
-                            .newLatLngZoom(coordinatesFrom(location), 16));
-                }
-                else {
-                    currentLocationMarker.setPosition(coordinatesFrom(location));
-                    map.moveCamera(CameraUpdateFactory
-                            .newLatLng(coordinatesFrom(location)));
-                }
-
-                try {
-                    FileWriter writer = new FileWriter(locationLog, true);
-                    writer.write(coordinatesForRecords(location));
-                    writer.flush();
-                    writer.close();
-                }
-                catch (Exception e) {
-                    Toast.makeText(MainActivity.this, "Fail to log location", Toast.LENGTH_SHORT).show();
-                    e.printStackTrace();
-                }
-            }
-        };
 
         FragmentManager fragmentManager = getSupportFragmentManager();
         SupportMapFragment mapFragment = (SupportMapFragment) fragmentManager.findFragmentById(R.id.mapView);
@@ -127,25 +83,17 @@ public class MainActivity extends AppCompatActivity {
 
         removeLocationButton.setEnabled(false);
 
+
         getLocationButton.setOnClickListener(view -> {
-            if (checkLocationPermission()) {
-                client.requestLocationUpdates(locationRequest, locationCallback, null);
-                getLocationButton.setEnabled(false);
-                removeLocationButton.setEnabled(true);
-            }
-            else {
-                failedPermissionToast();
-            }
+            Intent bindIntent = new Intent(MainActivity.this, LocationService.class);
+            bindService(bindIntent, connection, BIND_AUTO_CREATE);
+            getLocationButton.setEnabled(false);
+            removeLocationButton.setEnabled(true);
         });
         removeLocationButton.setOnClickListener(view -> {
-            if (checkLocationPermission()) {
-                client.removeLocationUpdates(locationCallback);
-                getLocationButton.setEnabled(true);
-                removeLocationButton.setEnabled(false);
-            }
-            else {
-                failedPermissionToast();
-            }
+            unbindService(connection);
+            getLocationButton.setEnabled(true);
+            removeLocationButton.setEnabled(false);
         });
 
         checkRecordsButton.setOnClickListener(view -> {
@@ -154,24 +102,39 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private boolean checkLocationPermission(){
-        int permissionCheck_Coarse = ContextCompat.checkSelfPermission(
-                MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION);
-        int permissionCheck_Fine = ContextCompat.checkSelfPermission(
-                MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION);
+    private LocationService.LocationBinder binder;
+    private ServiceConnection connection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+            binder = (LocationService.LocationBinder) iBinder;
+            binder.start(MainActivity.this);
+        }
 
-        if (permissionCheck_Coarse == PermissionChecker.PERMISSION_GRANTED
-                || permissionCheck_Fine == PermissionChecker.PERMISSION_GRANTED) {
-            return true;
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            System.out.println("disconnected");
+        }
+    };
+
+    void updateLastLocation(Location location) {
+        coordinatesTextView.setText(textFrom(location));
+
+        if (currentLocationMarker == null) {
+            MarkerOptions options = new MarkerOptions()
+                    .position(coordinatesFrom(location))
+                    .icon(BitmapDescriptorFactory
+                            .defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
+            currentLocationMarker = map.addMarker(options);
+            map.moveCamera(CameraUpdateFactory
+                    .newLatLngZoom(coordinatesFrom(location), 16));
         }
         else {
-            return false;
+            currentLocationMarker.setPosition(coordinatesFrom(location));
+            map.moveCamera(CameraUpdateFactory
+                    .newLatLng(coordinatesFrom(location)));
         }
     }
 
-    private void failedPermissionToast() {
-        Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show();
-    }
     private String textFrom(Location location) {
         return "Latitude: " + location.getLatitude()
                 + "\nLongitude: " + location.getLongitude();
@@ -181,8 +144,6 @@ public class MainActivity extends AppCompatActivity {
         return new LatLng(location.getLatitude(), location.getLongitude());
     }
 
-    private String coordinatesForRecords(Location location) {
-        return location.getLatitude() + ", " + location.getLongitude() + "\n";
-    }
+
 
 }
