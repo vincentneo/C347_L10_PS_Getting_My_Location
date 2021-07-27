@@ -59,14 +59,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // location permission
-        String[] fineLoc = new String[]{Manifest.permission.ACCESS_FINE_LOCATION};
-        ActivityCompat.requestPermissions(MainActivity.this, fineLoc, 0);
-
-        String[] bgLoc = new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION};
-        ActivityCompat.requestPermissions(MainActivity.this, bgLoc, 0);
-
-        String[] permission = new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.MANAGE_EXTERNAL_STORAGE};
-        ActivityCompat.requestPermissions(MainActivity.this, permission, 0);
+        String[] permissions = new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.MANAGE_EXTERNAL_STORAGE};
+        ActivityCompat.requestPermissions(MainActivity.this, permissions, 0);
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -105,6 +99,9 @@ public class MainActivity extends AppCompatActivity {
 
         getLocationButton.setOnClickListener(view -> {
             Intent bindIntent = new Intent(MainActivity.this, LocationService.class);
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//                startForegroundService(bindIntent);
+//            }
             bindService(bindIntent, connection, BIND_AUTO_CREATE);
             getLocationButton.setEnabled(false);
             removeLocationButton.setEnabled(true);
