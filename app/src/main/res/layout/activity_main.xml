@@ -7,16 +7,39 @@
     android:orientation="vertical"
     tools:context=".MainActivity">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Last known location:" />
+        android:orientation="horizontal">
 
-    <TextView
-        android:id="@+id/lastCoordinatesTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Latitude:\nLongitude:" />
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Last known location:" />
+
+            <TextView
+                android:id="@+id/lastCoordinatesTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Latitude:\nLongitude:" />
+
+        </LinearLayout>
+
+        <ToggleButton
+            android:id="@+id/musicToggle"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="ToggleButton"
+            android:textOff="Music Off"
+            android:textOn="Music On" />
+
+    </LinearLayout>
 
     <fragment
         android:id="@+id/mapView"

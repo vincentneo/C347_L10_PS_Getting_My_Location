@@ -118,7 +118,6 @@ public class LocationService extends Service {
     public void onDestroy() {
         if (checkLocationPermission()) {
             client.removeLocationUpdates(locationCallback);
-
         }
         else {
             failedPermissionToast();

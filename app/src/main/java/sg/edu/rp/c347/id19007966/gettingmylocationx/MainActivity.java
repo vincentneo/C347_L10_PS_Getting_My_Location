@@ -20,8 +20,10 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -47,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
 
     TextView coordinatesTextView;
     Button getLocationButton, removeLocationButton, checkRecordsButton;
+    ToggleButton musicToggle;
     GoogleMap map;
 
     // singapore centre's coordinates
@@ -62,6 +65,8 @@ public class MainActivity extends AppCompatActivity {
         String[] bgLoc = new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION};
         ActivityCompat.requestPermissions(MainActivity.this, bgLoc, 0);
 
+        String[] permission = new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.MANAGE_EXTERNAL_STORAGE};
+        ActivityCompat.requestPermissions(MainActivity.this, permission, 0);
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -70,6 +75,20 @@ public class MainActivity extends AppCompatActivity {
         getLocationButton = findViewById(R.id.getLocationButton);
         removeLocationButton = findViewById(R.id.removeLocationButton);
         checkRecordsButton = findViewById(R.id.checkRecordsButton);
+        musicToggle = findViewById(R.id.musicToggle);
+
+        musicToggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean checked) {
+                Intent i = new Intent(MainActivity.this, AudioService.class);
+                if (checked) {
+                    startService(i);
+                }
+                else {
+                    stopService(i);
+                }
+            }
+        });
 
         FragmentManager fragmentManager = getSupportFragmentManager();
         SupportMapFragment mapFragment = (SupportMapFragment) fragmentManager.findFragmentById(R.id.mapView);
